@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Balance de Carga del Horno de Arco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+<style id="report-css"></style>
+</head>
+<body><div class="app">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+          <defs><linearGradient id="bathG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC861"/><stop offset=".55" stop-color="#F47A1F"/><stop offset="1" stop-color="#B8410A"/></linearGradient></defs>
+          <rect x="11" y="3" width="3" height="13" rx="1.2" fill="#3A4656"/><rect x="15.5" y="2" width="3" height="14" rx="1.2" fill="#3A4656"/><rect x="20" y="3" width="3" height="13" rx="1.2" fill="#3A4656"/>
+          <path d="M6 15h22v6.5c0 5.5-4.5 9.5-11 9.5S6 27 6 21.5z" fill="#2D5C8A"/>
+          <path d="M8.5 19.5h17v2.2c0 4-3.6 6.8-8.5 6.8s-8.5-2.8-8.5-6.8z" fill="url(#bathG)"/>
+        </svg>
+        <b>Balance de carga del horno de arco</b>
+      </div>
+      <nav class="tabs" aria-label="Etapas">
+        <button class="tab" data-view="balance" type="button">Balance</button>
+        <button class="tab" data-view="materiales" type="button">Materiales</button>
+        <button class="tab" data-view="resultado" type="button">Detalle de la carga</button>
+        <button class="tab" data-view="escenarios" type="button">Escenarios</button>
+        <button class="tab" data-view="registro" type="button">Coladas <span class="count" id="navCount"></span></button>
+        <button class="tab" data-view="calibracion" type="button">Calibración</button>
+        <button class="tab" data-view="reporte" type="button">Reporte</button>
+        <button class="tab" data-view="metodo" type="button">Método</button>
+      </nav>
+      <div class="top-act">
+        <button class="btn primary" id="btnOpt" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5l3.6 3.6L16 5.7"/></svg><span>Optimizar</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="readouts" id="kpis"></div>
+
+  <main class="main" id="main">
+    <div class="viewhead" id="vacts"></div>
+
+    <!-- Balance: consola + horno -->
+    <section class="view balance" id="v-balance">
+      <aside class="console" id="console" aria-label="Parámetros"></aside>
+      <div class="stage">
+        <div class="stage-bar">
+          <div class="seg" id="sankeyMode"><button type="button" data-mode="mass" class="on">Balance de masa</button><button type="button" data-mode="energy">Balance de energía</button></div>
+          <span class="hint" id="sankeyHint"></span>
+        </div>
+        <div class="canvas"><div id="sankey"></div></div>
+        <div class="recipe-strip" id="recipeStrip"></div>
+        <div class="insights" id="insights"></div>
+      </div>
+    </section>
+
+    <!-- Materiales -->
+    <section class="view" id="v-materiales" hidden>
+      <div class="col">
+        <div class="panel">
+          <div class="ph"><h2>Inventario y calidad</h2><div class="tools"><button class="btn sm" type="button" id="btnAddMat">Agregar material</button><button class="btn sm ghost" type="button" id="btnResetMat">Valores de referencia</button></div></div>
+          <div class="pb flush"><div class="tw"><table class="t" id="matTable"></table></div></div>
+          <div class="pb"><p class="note" id="matNote"></p></div>
+        </div>
+        <div class="grid g-wide">
+          <div class="panel"><div class="ph"><h2>Precio frente a cobre</h2></div><div class="pb"><div class="chartbox" id="chMatMap"></div></div></div>
+          <div class="panel"><div class="ph"><h2>Rendimiento del DRI</h2></div><div class="pb" id="driCalc"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detalle de la carga -->
+    <section class="view" id="v-resultado" hidden>
+      <div class="col">
+        <div id="optMsg"></div>
+        <div class="grid g-wide">
+          <div class="panel">
+            <div class="ph"><h2>Receta por colada</h2><div class="tools" id="recipeTools"></div></div>
+            <div class="pb"><div id="stackBar"></div></div>
+            <div class="pb flush"><div class="tw"><table class="t" id="recipeTable"></table></div></div>
+          </div>
+          <div class="col">
+            <div class="panel"><div class="ph"><h2>Química residual</h2></div><div class="pb"><div class="bullets" id="bullets"></div></div></div>
+            <div class="panel"><div class="ph"><h2>Masa y escoria</h2></div><div class="pb"><div class="dl" id="massList"></div></div></div>
+          </div>
+        </div>
+        <div class="grid g-wide">
+          <div class="panel"><div class="ph"><h2>Energía eléctrica por término</h2></div><div class="pb"><div class="chartbox" id="chWaterfall"></div><p class="note">Términos de la fórmula de Köhle (Kleimt et al., 2005). Naranja: suben el consumo. Verde: lo bajan. La barra de calibración corrige con coladas reales del horno.</p></div></div>
+          <div class="panel"><div class="ph"><h2>Costo por tonelada</h2></div><div class="pb"><div class="chartbox" id="chCost"></div></div></div>
+        </div>
+        <div class="grid g-wide">
+          <div class="panel"><div class="ph"><h2>Restricciones y su valor</h2></div><div class="pb flush"><div class="tw"><table class="t" id="consTable"></table></div></div><div class="pb"><p class="note">El valor de relajar indica cuánto bajaría el costo por tonelada si la restricción se aflojara un poco. Sirve para negociar una especificación o el precio de una chatarra limpia.</p></div></div>
+          <div class="panel"><div class="ph"><h2>Emisiones de CO₂</h2></div><div class="pb"><div class="chartbox" id="chCO2"></div><div id="co2Note"></div></div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>Frente a la receta actual de planta</h2><div class="tools"><button class="btn sm" type="button" id="btnCmpReset">Receta típica</button></div></div>
+          <div class="pb"><div class="grid g-wide"><div class="tw"><table class="t" id="cmpTable"></table></div><div id="cmpOut"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Escenarios -->
+    <section class="view" id="v-escenarios" hidden>
+      <div class="col">
+        <div class="panel">
+          <div class="ph"><h2>Costo y cobre según el DRI cargado</h2></div>
+          <div class="ckey" id="keyDRI"></div>
+          <div class="pb"><div class="chartbox" id="chDRI"></div><p class="note" id="noteDRI"></p></div>
+        </div>
+        <div class="grid g2">
+          <div class="panel"><div class="ph"><h2>Energía y productividad</h2></div><div class="ckey" id="keyDRI2"></div><div class="pb"><div class="chartbox" id="chDRI2"></div></div></div>
+          <div class="panel"><div class="ph"><h2>Sensibilidad a precios ±15 %</h2></div><div class="ckey"><span><i style="background:var(--teal)"></i>Precio −15 %</span><span><i style="background:var(--crimson)"></i>Precio +15 %</span></div><div class="pb"><div class="chartbox" id="chTornado"></div></div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>Mapa de decisión del DRI</h2><div class="tools"><div class="fi sel" style="width:250px"><select id="mapY" aria-label="Precio en el eje vertical"></select></div></div></div>
+          <div class="pb"><div class="chartbox" id="chMap"></div><p class="note">Cada celda es una optimización completa. Muestra cuándo conviene subir o bajar el DRI frente a la tarifa eléctrica y al precio de mercado.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coladas -->
+    <section class="view" id="v-registro" hidden>
+      <div class="grid g-wide">
+        <div class="col">
+          <div class="panel">
+            <div class="ph"><h2>Coladas registradas</h2><div class="tools"><button class="btn sm" type="button" id="btnExportCSV">Exportar CSV</button><label class="btn sm" for="csvIn">Importar CSV</label><input type="file" id="csvIn" accept=".csv,text/csv" hidden><span id="clearDemoWrap"></span></div></div>
+            <div class="pb flush"><div class="tw"><table class="t" id="heatTable"></table></div></div>
+          </div>
+          <div class="panel"><div class="ph"><h2 id="hdTitle">Colada</h2><div class="tools" id="hdTools"></div></div><div class="pb" id="heatDetail"></div></div>
+        </div>
+        <div class="panel">
+          <div class="ph"><h2>Nueva colada</h2><div class="tools"><button class="btn sm" type="button" id="btnUsePlan">Usar receta optimizada</button></div></div>
+          <form class="pb" id="heatForm" autocomplete="off">
+            <div class="fields" id="f-heat-id"></div>
+            <p class="sublabel">Carga real (t)</p>
+            <div class="fields" id="f-heat-charge"></div>
+            <p class="sublabel">Mediciones</p>
+            <div class="fields" id="f-heat-meas"></div>
+            <label class="sublabel" for="h_notes" style="display:block">Observaciones</label>
+            <textarea class="ta" id="h_notes" placeholder="Demoras, eventos, cambios de práctica"></textarea>
+            <div id="heatFormMsg" style="margin-top:10px"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn primary" type="submit">Guardar colada</button><button class="btn" type="button" id="btnClearForm">Limpiar</button></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calibración -->
+    <section class="view" id="v-calibracion" hidden>
+      <div class="col">
+        <div id="calMsg"></div>
+        <div class="grid g-wide">
+          <div class="panel"><div class="ph"><h2>Modelos de energía comparados</h2></div><div class="pb flush"><div class="tw"><table class="t" id="modelTable"></table></div></div><div class="pb"><p class="note" id="modelNote"></p></div></div>
+          <div class="panel"><div class="ph"><h2>Predicción de la colada planificada</h2></div><div class="pb" id="predBox"></div></div>
+        </div>
+        <div class="grid g2">
+          <div class="panel"><div class="ph"><h2>Medido frente a predicho</h2></div><div class="pb"><div class="chartbox" id="chParity"></div></div></div>
+          <div class="panel"><div class="ph"><h2>Carta de control del error</h2></div><div class="ckey" id="keySPC"></div><div class="pb"><div class="chartbox" id="chSPC"></div><div id="spcList"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reporte -->
+    <section class="view" id="v-reporte" hidden>
+      <div class="col">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><div class="fi sel" style="width:360px;max-width:100%"><select id="repSel" aria-label="Contenido del reporte"></select></div><button class="btn primary" type="button" id="btnRepDl">Descargar reporte</button><button class="btn" type="button" id="btnRepCSV">Descargar datos (CSV)</button><span class="note">Documento A4 que se imprime o se guarda en PDF desde el navegador.</span></div>
+        <div class="sheetwrap"><div id="sheet"></div></div>
+      </div>
+    </section>
+
+    <!-- Método -->
+    <section class="view" id="v-metodo" hidden>
+      <div class="grid g2" id="methodWrap"></div>
+    </section>
+  </main>
+
+  <footer class="foot" id="status"></footer>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/report.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

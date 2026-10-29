@@ -1,0 +1,7 @@
+﻿{
+  "name": "balance-carga-horno-arco",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Balance de carga del horno de arco electrico (EAF)",
+  "scripts": { "start": "npx --yes serve . -l 5173" }
+}
